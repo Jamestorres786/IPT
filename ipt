@@ -30,8 +30,8 @@ namespace EmployeeAttendanceSystem
         // Mock Database for names
         private Dictionary<string, string> EmployeeDB = new Dictionary<string, string>
         {
-            { "1010101", "John Doe" },
-            { "1010102", "Jane Smith" }
+            { "1010101", "Johnny" },
+            { "1010102", "Always Smith" }
         };
 
         // Implementation of Abstract Method
