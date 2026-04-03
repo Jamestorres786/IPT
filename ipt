@@ -1,0 +1,154 @@
+using System;
+using System.Collections.Generic;
+
+namespace EmployeeAttendanceSystem
+{
+    // 1. ABSTRACT CLASS for Mathematical Computations (Requirement)
+    public abstract class TimeCalculator
+    {
+        public abstract double CalculateHours(DateTime timeIn, DateTime timeOut);
+    }
+
+    // 2. CLASS FOR RECORD DATA (Encapsulation)
+    public class AttendanceRecord
+    {
+        public string EmployeeNumber { get; set; }
+        public string EmployeeName { get; set; }
+        public string OfficeLocation { get; set; }
+        public DateTime TimeIn { get; set; }
+        public DateTime? TimeOut { get; set; } // Nullable if not yet timed out
+        public double TotalHours { get; set; }
+        public string Note { get; set; }
+    }
+
+    // 3. MAIN SYSTEM (Inheritance)
+    public class AttendanceManager : TimeCalculator
+    {
+        // Dictionary named "Employee Timein-TimeOut Record" as required
+        private Dictionary<string, AttendanceRecord> EmployeeTimeinTimeOutRecord = new Dictionary<string, AttendanceRecord>();
+
+        // Mock Database for names
+        private Dictionary<string, string> EmployeeDB = new Dictionary<string, string>
+        {
+            { "1010101", "John Doe" },
+            { "1010102", "Jane Smith" }
+        };
+
+        // Implementation of Abstract Method
+        public override double CalculateHours(DateTime timeIn, DateTime timeOut)
+        {
+            TimeSpan duration = timeOut - timeIn;
+            return Math.Round(duration.TotalHours, 2);
+        }
+
+        public void ProcessTimeIn()
+        {
+            Console.WriteLine("--- EMPLOYEE ATTENDANCE SYSTEM ---");
+            Console.Write("Employee Number: ");
+            string empNum = Console.ReadLine();
+
+            if (!EmployeeDB.ContainsKey(empNum))
+            {
+                Console.WriteLine("Error: Employee Number not found.");
+                return;
+            }
+
+            Console.Write("Which office are you located? (Philippines, United States, India): ");
+            string location = Console.ReadLine();
+
+            // Handle Timezone
+            DateTime localTime = GetLocationTime(location);
+            if (localTime == DateTime.MinValue) return;
+
+            // Save to Dictionary
+            AttendanceRecord record = new AttendanceRecord
+            {
+                EmployeeNumber = empNum,
+                EmployeeName = EmployeeDB[empNum],
+                OfficeLocation = location,
+                TimeIn = localTime,
+                Note = ""
+            };
+
+            EmployeeTimeinTimeOutRecord[empNum] = record;
+
+            // Sample Output Display
+            Console.WriteLine("\nYou clocked in at:");
+            Console.WriteLine($"Date: {localTime:MM/dd/yy}");
+            Console.WriteLine($"Time: {localTime:hh:mm:ss tt}");
+
+            Console.WriteLine("\nEmployee Log:");
+            Console.WriteLine($"Name: {record.EmployeeName}");
+            Console.WriteLine($"Location: {record.OfficeLocation}");
+            Console.WriteLine($"Time-In: {record.TimeIn:MM/dd/yy hh:mm:ss tt}");
+            
+            // For testing: Proceed to Time-Out sample
+            Console.WriteLine("\n--- Simulating Time-Out (9 hours later) ---");
+            ProcessTimeOut(empNum, localTime.AddHours(11)); // Halimbawa: 11 hours shift (Overtime)
+        }
+
+        public void ProcessTimeOut(string empNum, DateTime simulatedTimeOut)
+        {
+            if (EmployeeTimeinTimeOutRecord.ContainsKey(empNum))
+            {
+                var record = EmployeeTimeinTimeOutRecord[empNum];
+                record.TimeOut = simulatedTimeOut;
+                record.TotalHours = CalculateHours(record.TimeIn, (DateTime)record.TimeOut);
+
+                // Logical Note Requirements
+                if (record.TotalHours == 9)
+                {
+                    record.Note = "";
+                }
+                else if (record.TotalHours < 9)
+                {
+                    double remaining = 9 - record.TotalHours;
+                    record.Note = $"Early Out. Hours left: {remaining} hours";
+                }
+                else // More than 9 hours
+                {
+                    double extended = record.TotalHours - 9;
+                    record.Note = $"Overtime. Hours extended: {extended} hours";
+                }
+
+                Console.WriteLine($"Total Hours: {record.TotalHours}");
+                Console.WriteLine($"Note: {record.Note}");
+            }
+        }
+
+        private DateTime GetLocationTime(string location)
+        {
+            try
+            {
+                string tzId = location switch
+                {
+                    "Philippines" => "Singapore Standard Time", // PH uses same offset as SG
+                    "United States" => "Eastern Standard Time",
+                    "India" => "India Standard Time",
+                    _ => throw new Exception("Invalid Location")
+                };
+
+                TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+                return TimeZoneInfo.ConvertTime(DateTime.Now, tz);
+            }
+            catch
+            {
+                Console.WriteLine("Error: Location not supported.");
+                return DateTime.MinValue;
+            }
+        }
+    }
+
+    // 4. PROGRAM ENTRY POINT
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            AttendanceManager system = new AttendanceManager();
+            system.ProcessTimeIn();
+            
+            Console.WriteLine("\nPress any key to exit...");
+            Console.ReadKey();
+        }
+    }
+}
