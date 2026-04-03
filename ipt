@@ -1,152 +1,157 @@
 using System;
 using System.Collections.Generic;
 
-namespace EmployeeAttendanceSystem
+namespace IntegrativeProgrammingActivity
 {
-    // 1. ABSTRACT CLASS for Mathematical Computations (Requirement)
-    public abstract class TimeCalculator
+    // --- 1. ABSTRACT CLASS (Requirement: Classes for mathematical computations) ---
+    public abstract class AttendanceMath
     {
-        public abstract double CalculateHours(DateTime timeIn, DateTime timeOut);
+        public abstract double ComputeHours(DateTime timeIn, DateTime timeOut);
     }
 
-    // 2. CLASS FOR RECORD DATA (Encapsulation)
-    public class AttendanceRecord
+    // --- 2. CLASS FOR DATA (Requirement: Encapsulation) ---
+    public class AttendanceLog
     {
         public string EmployeeNumber { get; set; }
         public string EmployeeName { get; set; }
-        public string OfficeLocation { get; set; }
+        public string Location { get; set; }
         public DateTime TimeIn { get; set; }
-        public DateTime? TimeOut { get; set; } // Nullable if not yet timed out
+        public DateTime? TimeOut { get; set; }
         public double TotalHours { get; set; }
         public string Note { get; set; }
     }
 
-    // 3. MAIN SYSTEM (Inheritance)
-    public class AttendanceManager : TimeCalculator
+    // --- 3. MAIN SYSTEM (Requirement: Inheritance) ---
+    public class TimeTrackingSystem : AttendanceMath
     {
-        // Dictionary named "Employee Timein-TimeOut Record" as required
-        private Dictionary<string, AttendanceRecord> EmployeeTimeinTimeOutRecord = new Dictionary<string, AttendanceRecord>();
+        // Requirement: Dictionary named "Employee Timein-TimeOut Record"
+        private Dictionary<string, AttendanceLog> EmployeeTimeinTimeOutRecord = new Dictionary<string, AttendanceLog>();
 
-        // Mock Database for names
-        private Dictionary<string, string> EmployeeDB = new Dictionary<string, string>
+        // Mock Database para sa pangalan ng empleyado
+        private Dictionary<string, string> EmployeeDatabase = new Dictionary<string, string>
         {
-            { "1010101", "Johnny" },
-            { "1010102", "Always Smith" }
+            { "1010101", "John Doe" },
+            { "1010102", "Jane Smith" }
         };
 
-        // Implementation of Abstract Method
-        public override double CalculateHours(DateTime timeIn, DateTime timeOut)
+        // Implementation ng Abstract Method
+        public override double ComputeHours(DateTime timeIn, DateTime timeOut)
         {
-            TimeSpan duration = timeOut - timeIn;
-            return Math.Round(duration.TotalHours, 2);
+            TimeSpan span = timeOut - timeIn;
+            return Math.Round(span.TotalHours, 2);
         }
 
-        public void ProcessTimeIn()
+        public void RunSystem()
         {
-            Console.WriteLine("--- EMPLOYEE ATTENDANCE SYSTEM ---");
-            Console.Write("Employee Number: ");
+            // INPUT SECTION
+            Console.WriteLine("Employee Number:");
             string empNum = Console.ReadLine();
 
-            if (!EmployeeDB.ContainsKey(empNum))
+            if (!EmployeeDatabase.ContainsKey(empNum))
             {
-                Console.WriteLine("Error: Employee Number not found.");
+                Console.WriteLine("Employee not found!");
                 return;
             }
 
-            Console.Write("Which office are you located? (Philippines, United States, India): ");
-            string location = Console.ReadLine();
+            Console.WriteLine("Which office are you located?");
+            string location = Console.ReadLine(); // Accept: Philippines, United States, India
 
-            // Handle Timezone
-            DateTime localTime = GetLocationTime(location);
-            if (localTime == DateTime.MinValue) return;
+            // TIMEZONE PROCESSING
+            DateTime officeTime = GetTimeByLocation(location);
+            if (officeTime == DateTime.MinValue) return;
 
-            // Save to Dictionary
-            AttendanceRecord record = new AttendanceRecord
+            // DISPLAY OUTPUT (Sakto sa screenshot mo)
+            Console.WriteLine("\nYou clocked in at:");
+            Console.WriteLine($"Date:{officeTime:MM/dd/yy}");
+            Console.WriteLine($"Time: {officeTime:hh:mm:ss tt}");
+
+            // SAVING TO DICTIONARY
+            AttendanceLog newLog = new AttendanceLog
             {
                 EmployeeNumber = empNum,
-                EmployeeName = EmployeeDB[empNum],
-                OfficeLocation = location,
-                TimeIn = localTime,
-                Note = ""
+                EmployeeName = EmployeeDatabase[empNum],
+                Location = location,
+                TimeIn = officeTime
             };
+            EmployeeTimeinTimeOutRecord[empNum] = newLog;
 
-            EmployeeTimeinTimeOutRecord[empNum] = record;
-
-            // Sample Output Display
-            Console.WriteLine("\nYou clocked in at:");
-            Console.WriteLine($"Date: {localTime:MM/dd/yy}");
-            Console.WriteLine($"Time: {localTime:hh:mm:ss tt}");
-
+            // LOG DISPLAY
             Console.WriteLine("\nEmployee Log:");
-            Console.WriteLine($"Name: {record.EmployeeName}");
-            Console.WriteLine($"Location: {record.OfficeLocation}");
-            Console.WriteLine($"Time-In: {record.TimeIn:MM/dd/yy hh:mm:ss tt}");
-            
-            // For testing: Proceed to Time-Out sample
-            Console.WriteLine("\n--- Simulating Time-Out (9 hours later) ---");
-            ProcessTimeOut(empNum, localTime.AddHours(11)); // Halimbawa: 11 hours shift (Overtime)
+            Console.WriteLine($"Name:{newLog.EmployeeName}");
+            Console.WriteLine($"Location:{newLog.Location}");
+            Console.WriteLine($"Time-In:{newLog.TimeIn:MM/dd/yy hh:mm:ss tt}");
+
+            // --- OPTIONAL: SIMULATION NG TIME-OUT PARA SA NOTES ---
+            // Tinawag natin ang computation logic dito para maipakita ang "Note" requirement
+            SimulateTimeOut(empNum);
         }
 
-        public void ProcessTimeOut(string empNum, DateTime simulatedTimeOut)
-        {
-            if (EmployeeTimeinTimeOutRecord.ContainsKey(empNum))
-            {
-                var record = EmployeeTimeinTimeOutRecord[empNum];
-                record.TimeOut = simulatedTimeOut;
-                record.TotalHours = CalculateHours(record.TimeIn, (DateTime)record.TimeOut);
-
-                // Logical Note Requirements
-                if (record.TotalHours == 9)
-                {
-                    record.Note = "";
-                }
-                else if (record.TotalHours < 9)
-                {
-                    double remaining = 9 - record.TotalHours;
-                    record.Note = $"Early Out. Hours left: {remaining} hours";
-                }
-                else // More than 9 hours
-                {
-                    double extended = record.TotalHours - 9;
-                    record.Note = $"Overtime. Hours extended: {extended} hours";
-                }
-
-                Console.WriteLine($"Total Hours: {record.TotalHours}");
-                Console.WriteLine($"Note: {record.Note}");
-            }
-        }
-
-        private DateTime GetLocationTime(string location)
+        private DateTime GetTimeByLocation(string location)
         {
             try
             {
-                string tzId = location switch
+                string tzId = location.ToLower() switch
                 {
-                    "Philippines" => "Singapore Standard Time", // PH uses same offset as SG
-                    "United States" => "Eastern Standard Time",
-                    "India" => "India Standard Time",
-                    _ => throw new Exception("Invalid Location")
+                    "philippines" => "Singapore Standard Time",
+                    "united states" => "Eastern Standard Time",
+                    "india" => "India Standard Time",
+                    _ => ""
                 };
+
+                if (tzId == "") 
+                {
+                    Console.WriteLine("Invalid Location!");
+                    return DateTime.MinValue;
+                }
 
                 TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
                 return TimeZoneInfo.ConvertTime(DateTime.Now, tz);
             }
             catch
             {
-                Console.WriteLine("Error: Location not supported.");
+                Console.WriteLine("Timezone Error.");
                 return DateTime.MinValue;
             }
         }
+
+        private void SimulateTimeOut(string empNum)
+        {
+            var log = EmployeeTimeinTimeOutRecord[empNum];
+            // Halimbawa: Nag-time out matapos ang 11 hours (Overtime)
+            DateTime simulatedTimeOut = log.TimeIn.AddHours(11); 
+            
+            log.TimeOut = simulatedTimeOut;
+            log.TotalHours = ComputeHours(log.TimeIn, simulatedTimeOut);
+
+            // LOGIC PARA SA NOTES (Requirement)
+            if (log.TotalHours == 9)
+            {
+                log.Note = "";
+            }
+            else if (log.TotalHours < 9)
+            {
+                double diff = 9 - log.TotalHours;
+                log.Note = $"Early Out. Hours left: {diff} hours";
+            }
+            else
+            {
+                double extended = log.TotalHours - 9;
+                log.Note = $"Overtime. Hours extended: {extended} hours";
+            }
+
+            Console.WriteLine($"\n--- Attendance Summary ---");
+            Console.WriteLine($"Total Hours: {log.TotalHours}");
+            Console.WriteLine($"Note: {log.Note}");
+        }
     }
 
-    // 4. PROGRAM ENTRY POINT
     class Program
     {
         static void Main(string[] args)
         {
-            AttendanceManager system = new AttendanceManager();
-            system.ProcessTimeIn();
-            
+            TimeTrackingSystem system = new TimeTrackingSystem();
+            system.RunSystem();
+
             Console.WriteLine("\nPress any key to exit...");
             Console.ReadKey();
         }
