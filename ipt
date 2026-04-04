@@ -31,7 +31,7 @@ namespace IntegrativeProgrammingActivity
         private Dictionary<string, string> EmployeeDatabase = new Dictionary<string, string>
         {
             { "1010101", "Johnny" },
-            { "1010102", "Alwys Smith" }
+            { "1010102", "Always Smith" }
         };
 
         // Implementation ng Abstract Method
